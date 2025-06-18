@@ -93,7 +93,7 @@ CDBL/
 ## Credits
 
 - [eman225511/CustomDebloatedBloxLauncher](https://github.com/eman225511/CustomDebloatedBloxLauncher)  
-- [KickfnGIT/DebloatedBloxLauncher](https://github.com/KickfnGIT/DebloatedBloxLauncher)
+- [KickfnGIT/DebloatedBloxLauncher](https://github.com/KickfnGIT/DebloatedBloxLauncher) for this [code](https://github.com/eman225511/CustomDebloatedBloxLauncher/blob/main/func/ChangeSettings.ps1)
 - Huge thanks to @kaizenken on discord for the skyboxes
 - And huge thanks to @alana.py on discord for the help
 
