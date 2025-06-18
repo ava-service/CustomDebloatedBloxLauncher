@@ -122,7 +122,8 @@ class MainWindow(QWidget):
                 border-radius: 18px;
             }
         """)
-        self.skybox_dir = r"src\skybox"
+        # Always use absolute path for skybox_dir
+        self.skybox_dir = os.path.join(os.path.dirname(__file__), "src", "skybox")
         self.config_path = os.path.join(os.path.dirname(__file__), "user_config.json")
         self.roblox_shortcut = ""
         self.load_config()
