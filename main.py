@@ -15,6 +15,7 @@ from func.APIFunc import download_file, unzip_file, delete_all_downloads
 import json
 import urllib.request
 import tempfile
+import shutil
 
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
@@ -122,8 +123,8 @@ class MainWindow(QWidget):
                 border-radius: 18px;
             }
         """)
-        # Always use absolute path for skybox_dir
-        self.skybox_dir = os.path.join(os.path.dirname(__file__), "src", "skybox")
+        # Always use an absolute path for the skybox directory
+        self.skybox_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "src", "skybox"))
         self.config_path = os.path.join(os.path.dirname(__file__), "user_config.json")
         self.roblox_shortcut = ""
         self.load_config()
@@ -1149,15 +1150,31 @@ class DownloadWorker(QThread):
         self.extract_subfolder = extract_subfolder
 
     def run(self):
+        import shutil
         try:
             zip_path = download_file(self.url, None)
             if zip_path and zip_path.endswith(".zip"):
                 extract_to = None
                 if self.extract_subfolder:
-                    # Always extract to the correct subfolder
                     local_app_data = os.getenv("LOCALAPPDATA")
                     extract_to = os.path.join(local_app_data, "CustomBloxLauncher", "Downloads", self.extract_subfolder)
                 unzip_file(zip_path, extract_to)
+                # --- Move all files from any subfolders up to extract_to ---
+                if extract_to:
+                    for root, dirs, files in os.walk(extract_to):
+                        if root == extract_to:
+                            continue  # skip the root itself
+                        for f in files:
+                            src = os.path.join(root, f)
+                            dst = os.path.join(extract_to, f)
+                            try:
+                                shutil.move(src, dst)
+                            except Exception:
+                                pass
+                    # Remove empty subfolders
+                    for root, dirs, files in os.walk(extract_to, topdown=False):
+                        if root != extract_to and not os.listdir(root):
+                            os.rmdir(root)
                 self.finished.emit(zip_path, "")
             else:
                 self.finished.emit("", "Failed to download or extract zip.")
