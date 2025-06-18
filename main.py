@@ -1,6 +1,6 @@
 import sys
-import subprocess
 import os
+import subprocess
 from PySide6.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QMessageBox, QTabBar, QStackedWidget, QSizePolicy, QFrame, QListWidget,
@@ -33,6 +33,11 @@ SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLaun
 
 print("[DEBUG] Starting CDBL...")
 print("[DEBUG] Downloading required files...")
+
+if getattr(sys, 'frozen', False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_all_versions_paths():
     localappdata = os.environ.get('LOCALAPPDATA')
@@ -134,8 +139,8 @@ class MainWindow(QWidget):
             }
         """)
         # Always use an absolute path for the skybox directory
-        self.skybox_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "src", "skybox"))
-        self.config_path = os.path.join(os.path.dirname(__file__), "user_config.json")
+        self.config_path = os.path.join(BASE_DIR, "user_config.json")
+        self.skybox_dir = os.path.abspath(os.path.join(BASE_DIR, "src", "skybox"))
         self.roblox_shortcut = ""
         local_app_data = os.getenv("LOCALAPPDATA")
         self.skybox_preview_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Previews")
@@ -1086,19 +1091,27 @@ class MainWindow(QWidget):
         gfx = self.graphics_edit.text().strip()
         vol = self.volume_edit.text().strip()
 
-        # Copy Roblox settings file before applying changes
-        src = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Roblox", "GlobalBasicSettings_13.xml")
-        dst = os.path.join(os.path.dirname(__file__), "func", "GlobalBasicSettings_13.xml")
+        roblox_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Roblox")
+        src = os.path.join(roblox_dir, "GlobalBasicSettings_13.xml")
+        default_settings = os.path.join(BASE_DIR, "func", "GlobalBasicSettings_13.xml")
+        temp_settings = os.path.join(BASE_DIR, "func", "GlobalBasicSettings_13_edit.xml")
+
+        # If Roblox settings file doesn't exist, clone from default
         if not os.path.exists(src):
-            QMessageBox.critical(self, "Settings", f"Could not find:\n{src}\n\nOpen Roblox at least once before using this feature.")
-            return
+            if os.path.exists(default_settings):
+                shutil.copy2(default_settings, src)
+            else:
+                QMessageBox.critical(self, "Settings", f"Could not find:\n{src}\n\nAnd no default settings found at:\n{default_settings}")
+                return
+
+        # Always work on a temp copy
         try:
-            shutil.copy2(src, dst)
+            shutil.copy2(src, temp_settings)
         except Exception as e:
             QMessageBox.critical(self, "Settings", f"Failed to copy settings file:\n{e}")
             return
 
-        script_path = os.path.join(os.path.dirname(__file__), "func", "ChangeSettings.ps1")
+        script_path = os.path.join(BASE_DIR, "func", "ChangeSettings.ps1")
         if not os.path.exists(script_path):
             QMessageBox.critical(self, "Settings", f"Script not found:\n{script_path}")
             return
@@ -1116,15 +1129,19 @@ class MainWindow(QWidget):
 
         try:
             completed = subprocess.run(
-                ["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path] + args,
+                ["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, temp_settings] + args,
                 capture_output=True, text=True, shell=True
             )
-            # --- Copy back the modified XML if script succeeded ---
+            # --- Replace the original XML if script succeeded ---
             if completed.returncode == 0:
                 try:
-                    shutil.copy2(dst, src)
+                    backup_path = src + ".bak"
+                    if os.path.exists(src):
+                        shutil.copy2(src, backup_path)
+                        os.remove(src)
+                    shutil.move(temp_settings, src)
                 except Exception as e:
-                    QMessageBox.warning(self, "Settings", f"Settings applied, but failed to copy back to Roblox folder:\n{e}")
+                    QMessageBox.warning(self, "Settings", f"Settings applied, but failed to move back to Roblox folder:\n{e}")
                 QMessageBox.information(self, "Settings", "Settings applied!\n\n" + completed.stdout)
                 # Clear fields for user clarity
                 self.sensitivity_edit.clear()

@@ -1,13 +1,14 @@
 # Created by: https://github.com/KickfnGIT/DebloatedBloxLauncher
 
 param(
+    [string]$SettingsPath = "GlobalBasicSettings_13.xml",
     [string]$Sensitivity = "",
     [string]$FPSCap = "",
     [string]$Graphics = "",
     [string]$Volume = ""
 )
 
-$robloxSettings = 'func\GlobalBasicSettings_13.xml'
+$robloxSettings = $SettingsPath
 
 if (-not (Test-Path $robloxSettings)) {
     Write-Host "ERROR: Settings file not found at $robloxSettings"
