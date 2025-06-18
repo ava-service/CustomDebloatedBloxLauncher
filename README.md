@@ -29,8 +29,8 @@ It allows you to easily patch, restore, and personalize Roblox with custom skybo
 
 |   |  |
 | ------------- | ------------- |
-| ![alt](Preview1.png)  | ![alt](Preview3.png)  |
-| ![alt](Preview2.png)  | ![alt](Preview4.png)  |
+| ![alt](Preview3.png)  | ![alt](Preview1.png)  |
+| ![alt](Preview4.png)  | ![alt](Preview2.png)  |
 
 ---
 
