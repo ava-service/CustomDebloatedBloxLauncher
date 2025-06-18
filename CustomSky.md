@@ -1,12 +1,12 @@
 📦 Step 1: Understand Skybox Structure
 
 A skybox is a cube with 6 faces:
-   •    Up (top)
-   •    Down (bottom)
-   •    Left
-   •    Right
-   •    Front
-   •    Back
+   - Up (top)
+   - Down (bottom)
+   - Left
+   - Right
+   - Front
+   - Back
 
 Each face gets its own image.
 
@@ -15,13 +15,13 @@ Each face gets its own image.
 🖼️ Step 2: Create or Find the 6 Images
 
 You can:
-   •    Make your own in Photoshop, GIMP, or Blender
-   •    Use a 3D rendering tool (like Unity, Blender, or Skybox AI generators)
-   •    Or grab a free one from Poly Haven, AmbientCG, or similar
+   - Make your own in Photoshop, GIMP, or Blender
+   - Use a 3D rendering tool (like Unity, Blender, or Skybox AI generators)
+   - Or grab a free one from Poly Haven, AmbientCG, or similar
 
 Make sure each image is:
-   •    Square (512x512 or 1024x1024)
-   •    Labeled correctly so they match the cube face (see below)
+   - Square (512x512 or 1024x1024)
+   - Labeled correctly so they match the cube face (see below)
 
 Example filenames:
 ```
@@ -45,14 +45,14 @@ To .tex**
 If you’re replacing files in Roblox’s install folder (e.g. sky512_up.tex), you need .tex format.
 
 Since Roblox uses a custom .tex format, there’s no official converter, but if you’ve already:
-   •    Downloaded working .tex files
-   •    Or have a tool that reads/writes .tex
+   - Downloaded working .tex files
+   - Or have a tool that reads/writes .tex
 
 Then just replace each .tex file’s contents using your PNGs.
 
 If you don’t have a converter, try using:
-   •    A modded tool like Texture Tool, Noesis, or a game-specific converter (won’t work 100% unless it targets Roblox-style .tex)
-   •    Or inject your textures at runtime via shaders, scripts, or asset spoofing
+   - A modded tool like Texture Tool, Noesis, or a game-specific converter (won’t work 100% unless it targets Roblox-style .tex)
+   - Or inject your textures at runtime via shaders, scripts, or asset spoofing
 
 ⸻
 
