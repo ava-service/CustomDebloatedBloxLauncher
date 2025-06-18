@@ -939,6 +939,7 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Apply Skybox", "No skybox selected.")
             return
         skybox_name = selected.text()
+        skybox_path = os.path.join(self.skybox_dir, skybox_name)
         self.status_label.setText("Downloading skybox patch...")
 
         # Download and extract patch to the correct subfolder
@@ -959,7 +960,7 @@ class MainWindow(QWidget):
                 return
             self.status_label.setText(f"Applying skybox '{skybox_name}'...")
             try:
-                install_skybox(skybox_name)
+                install_skybox(skybox_path)
                 self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
                 QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
             except Exception as e:
