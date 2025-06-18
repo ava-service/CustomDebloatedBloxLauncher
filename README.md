@@ -47,6 +47,7 @@ It allows you to easily patch, restore, and personalize Roblox with custom skybo
 
    - **Skyboxes:**  
      Select a skybox from the list to preview. Click "Apply" to download and install it.
+     - for custom use this [Guide](CustomSky.md)
    - **Textures:**  
      Use the buttons to apply dark, light, or default textures.
    - **Settings:**  
