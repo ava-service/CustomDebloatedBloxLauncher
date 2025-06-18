@@ -25,7 +25,7 @@ def install_skybox(chosen_skybox):
     localappdata = os.environ.get('LOCALAPPDATA')
     # Use the correct path to your downloaded skybox assets
     # skybox_textures = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "Skybox")
-    skybox_textures = os.path.join("src", "skybox")
+    skybox_textures = os.path.join("..", "src", "skybox")
     chosen_skybox_path = os.path.join(skybox_textures, chosen_skybox)
     for versions_root in get_all_versions_paths():
         for version in glob.glob(os.path.join(versions_root, '*')):
