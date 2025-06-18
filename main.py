@@ -16,6 +16,7 @@ import json
 import urllib.request
 import tempfile
 import shutil
+import requests
 
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
@@ -23,6 +24,15 @@ LightTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/r
 DefaultTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultTextures.zip"
 DefaultSky = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultSky.zip"
 SkyboxPatch = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPatch.zip"
+
+# SkyBox data and download URLs
+SkyName = ""
+SkyboxZIPs = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxZIPs/{SkyName}.zip"
+SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPNGs/SkyboxPNGs.zip"
+SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
+
+print("[DEBUG] Starting CDBL...")
+print("[DEBUG] Downloading required files...")
 
 def get_all_versions_paths():
     localappdata = os.environ.get('LOCALAPPDATA')
@@ -127,6 +137,11 @@ class MainWindow(QWidget):
         self.skybox_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "src", "skybox"))
         self.config_path = os.path.join(os.path.dirname(__file__), "user_config.json")
         self.roblox_shortcut = ""
+        local_app_data = os.getenv("LOCALAPPDATA")
+        self.skybox_preview_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Previews")
+        os.makedirs(self.skybox_preview_dir, exist_ok=True)
+        self.available_skyboxes = self.fetch_skybox_list()
+        self.ensure_previews_zip()
         self.load_config()
 
         # --- Main rounded background frame ---
@@ -159,15 +174,42 @@ class MainWindow(QWidget):
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
 
-    def get_skybox_names(self):
-        # List all directories in the skybox folder, sorted alphabetically
+    def fetch_skybox_list(self):
         try:
-            return sorted([
-                name for name in os.listdir(self.skybox_dir)
-                if os.path.isdir(os.path.join(self.skybox_dir, name))
-            ])
-        except Exception:
+            resp = requests.get(SkysList)
+            resp.raise_for_status()
+            return [line.strip() for line in resp.text.splitlines() if line.strip()]
+        except Exception as e:
+            print(f"Failed to fetch skybox list: {e}")
             return []
+
+    def ensure_previews_zip(self):
+        # Only download/extract if not already extracted
+        marker = os.path.join(self.skybox_preview_dir, ".unzipped")
+        if not os.path.exists(marker):
+            import tempfile
+            import requests
+            zip_path = os.path.join(tempfile.gettempdir(), "SkyboxPNGs.zip")
+            try:
+                # Download the zip
+                resp = requests.get(SkyboxPNGsZIP)
+                resp.raise_for_status()
+                with open(zip_path, "wb") as f:
+                    f.write(resp.content)
+                # Extract to preview dir
+                unzip_file(zip_path, self.skybox_preview_dir)
+                # Mark as unzipped
+                with open(marker, "w") as f:
+                    f.write("done")
+            except Exception as e:
+                print(f"Failed to download/extract SkyboxPNGs.zip: {e}")
+
+    def download_all_previews(self):
+        # No longer needed, previews are extracted from the zip
+        pass
+
+    def get_skybox_names(self):
+        return self.available_skyboxes
 
     def init_ui(self):
         outer_layout = self.outer_layout
@@ -817,7 +859,6 @@ class MainWindow(QWidget):
         self.save_config()
         try:
             subprocess.Popen(['cmd', '/c', 'start', '', shortcut], shell=True)
-            QMessageBox.information(self, "Launch", "Roblox launched.")
         except Exception as e:
             QMessageBox.critical(self, "Launch", f"Failed to launch Roblox:\n{e}")
 
@@ -914,7 +955,6 @@ class MainWindow(QWidget):
                 ["taskkill", "/f", "/im", "RobloxPlayerBeta.exe"],
                 check=True, capture_output=True, text=True
             )
-            QMessageBox.information(self, "Kill Roblox", "Roblox processes terminated.")
         except subprocess.CalledProcessError as e:
             QMessageBox.warning(self, "Kill Roblox", "No Roblox processes found or could not terminate.")
 
@@ -933,43 +973,58 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Download", f"Failed to download or run Roblox installer:\n{e}")
 
     def apply_skybox(self):
+        import shutil
         selected = self.skybox_list.currentItem()
         if not selected:
             self.status_label.setText("No skybox selected.")
             QMessageBox.warning(self, "Apply Skybox", "No skybox selected.")
             return
         skybox_name = selected.text()
-        skybox_path = os.path.join(self.skybox_dir, skybox_name)
-        self.status_label.setText("Downloading skybox patch...")
-
-        # Download and extract patch to the correct subfolder
-        self._worker_patch = DownloadWorker(SkyboxPatch, extract_subfolder="SkyboxPatch")
-        def on_patch_finished(zip_path, error):
-            if error:
-                self.status_label.setText("Failed to apply skybox patch.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox patch:\n{error}")
-                self._worker_patch = None
-                return
+        zip_url = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxZIPs/{skybox_name}.zip"
+        local_zip = os.path.join(tempfile.gettempdir(), f"{skybox_name}.zip")
+        local_app_data = os.getenv("LOCALAPPDATA")
+        extract_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Skyboxes", skybox_name)
+        os.makedirs(extract_dir, exist_ok=True)
+        # Download ZIP if not already extracted
+        if not os.listdir(extract_dir):
             try:
-                install_assets()
-                delete_all_downloads()
+                self.status_label.setText(f"Downloading skybox '{skybox_name}'...")
+                QApplication.processEvents()
+                resp = requests.get(zip_url)
+                resp.raise_for_status()
+                with open(local_zip, "wb") as f:
+                    f.write(resp.content)
+                self.status_label.setText(f"Extracting skybox '{skybox_name}'...")
+                QApplication.processEvents()
+                unzip_file(local_zip, extract_dir)
+                # --- Flatten any nested folders ---
+                for root, dirs, files in os.walk(extract_dir):
+                    if root == extract_dir:
+                        continue
+                    for f in files:
+                        src = os.path.join(root, f)
+                        dst = os.path.join(extract_dir, f)
+                        if not os.path.exists(dst):
+                            shutil.move(src, dst)
+                # Remove empty subfolders
+                for d in dirs:
+                    dir_path = os.path.join(root, d)
+                    if os.path.isdir(dir_path) and not os.listdir(dir_path):
+                        os.rmdir(dir_path)
             except Exception as e:
-                self.status_label.setText("Failed to install skybox patch assets.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to install patch assets:\n{e}")
-                self._worker_patch = None
+                self.status_label.setText("Failed to download/extract skybox.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox:\n{e}")
                 return
+        # Now apply as before
+        try:
             self.status_label.setText(f"Applying skybox '{skybox_name}'...")
-            try:
-                install_skybox(skybox_path)
-                self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
-                QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
-            except Exception as e:
-                self.status_label.setText("Failed to apply skybox.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
-            self._worker_patch = None
-
-        self._worker_patch.finished.connect(on_patch_finished)
-        self._worker_patch.start()
+            QApplication.processEvents()
+            install_skybox(extract_dir)
+            self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
+            QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
+        except Exception as e:
+            self.status_label.setText("Failed to apply skybox.")
+            QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
 
     def apply_custom_skybox(self):
         if not self.last_custom_sky_folder or not os.path.isdir(self.last_custom_sky_folder):
@@ -987,37 +1042,14 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to apply custom skybox:\n{e}")
         self.update_skybox_preview(self.last_custom_sky_folder)
 
-    def update_skybox_preview(self, skybox_name_or_path):
-        import glob
-        import os
-        from PIL import Image
-
-        # If it's a folder path, use it directly; else, treat as named skybox
-        if os.path.isdir(skybox_name_or_path):
-            skybox_path = skybox_name_or_path
-        else:
-            skybox_path = os.path.join(self.skybox_dir, skybox_name_or_path)
-
-        if os.path.isdir(skybox_path):
-            pngs = glob.glob(os.path.join(skybox_path, "*.png"))
-            if pngs:
-                pixmap = QPixmap(pngs[0])
+    def update_skybox_preview(self, skybox_name):
+        preview_path = os.path.join(self.skybox_preview_dir, f"{skybox_name}.png")
+        if os.path.exists(preview_path):
+            pixmap = QPixmap(preview_path)
+            if not pixmap.isNull():
                 pixmap = pixmap.scaled(self.skybox_preview.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.skybox_preview.setPixmap(pixmap)
                 return
-            texs = glob.glob(os.path.join(skybox_path, "*.tex"))
-            if texs:
-                fallback_png = os.path.join(skybox_path, "fallback_preview.png")
-                try:
-                    with Image.open(texs[0]) as im:
-                        im.save(fallback_png, "PNG")
-                    pixmap = QPixmap(fallback_png)
-                    pixmap = pixmap.scaled(self.skybox_preview.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                    self.skybox_preview.setPixmap(pixmap)
-                    return
-                except Exception as e:
-                    self.skybox_preview.setText("No Preview\n(.tex not an image)")
-                    return
         self.skybox_preview.setText("No Preview")
 
     def browse_shortcut(self):
