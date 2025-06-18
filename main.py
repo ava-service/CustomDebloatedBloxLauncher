@@ -7,13 +7,21 @@ from PySide6.QtWidgets import (
     QLineEdit, QFileDialog, QFormLayout, QCheckBox
 )
 from PySide6.QtGui import QPixmap, QPainter, QFont, QIcon, QColor
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property, QRect
-from func.ApplySkybox import install_skybox
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property, QRect, QThread, Signal
+from func.ApplySkybox import install_skybox, install_assets
 from func.ApplyDark import install_dark_textures
 from func.Restore import restore_skybox, full_restore, restore_dark_textures
+from func.APIFunc import download_file, unzip_file, delete_all_downloads
 import json
 import urllib.request
 import tempfile
+
+# URLs for downloading resources
+DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
+LightTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/LightTextures.zip"
+DefaultTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultTextures.zip"
+DefaultSky = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultSky.zip"
+SkyboxPatch = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPatch.zip"
 
 def get_all_versions_paths():
     localappdata = os.environ.get('LOCALAPPDATA')
@@ -207,6 +215,12 @@ class MainWindow(QWidget):
         close_btn.clicked.connect(self.close)
         top_bar.addWidget(close_btn)
         outer_layout.addLayout(top_bar)
+
+        # --- Status label for updates ---
+        self.status_label = QLabel("")
+        self.status_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.status_label.setStyleSheet("color: #b8f582; margin-bottom: 6px;")
+        outer_layout.addWidget(self.status_label)
 
         # Add vertical space between top bar and tabs
         outer_layout.addSpacing(18)
@@ -809,32 +823,88 @@ class MainWindow(QWidget):
         QMessageBox.information(self, "Settings", "This would open the settings dialog.")
 
     def apply_dark_textures(self):
-        try:
-            install_dark_textures()
-            QMessageBox.information(self, "Dark Textures", "Dark textures applied successfully.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Dark Textures", f"Failed to apply dark textures:\n{e}")
+        self.status_label.setText("Downloading dark textures...")
+        self._worker_dark = DownloadWorker(DarkTextures)
+        def on_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to apply dark textures.")
+                QMessageBox.critical(self, "Dark Textures", f"Failed to apply dark textures:\n{error}")
+                self._worker_dark = None
+                return
+            try:
+                install_dark_textures()
+                delete_all_downloads()
+                self.status_label.setText("Dark textures applied! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Dark Textures", "Dark textures applied successfully.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to apply dark textures.")
+                QMessageBox.critical(self, "Dark Textures", f"Failed to apply dark textures:\n{e}")
+            self._worker_dark = None
+        self._worker_dark.finished.connect(on_finished)
+        self._worker_dark.start()
 
     def restore_skybox(self):
-        try:
-            restore_skybox()
-            QMessageBox.information(self, "Restore Skybox", "Default skybox restored.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Restore Skybox", f"Failed to restore skybox:\n{e}")
-            
+        self.status_label.setText("Restoring default skybox...")
+        self._worker_restore_skybox = DownloadWorker(DefaultSky)
+        def on_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to restore skybox.")
+                QMessageBox.critical(self, "Restore Skybox", f"Failed to restore skybox:\n{error}")
+                self._worker_restore_skybox = None
+                return
+            try:
+                restore_skybox()
+                delete_all_downloads()
+                self.status_label.setText("Default skybox restored! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Restore Skybox", "Default skybox restored.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to restore skybox.")
+                QMessageBox.critical(self, "Restore Skybox", f"Failed to restore skybox:\n{e}")
+            self._worker_restore_skybox = None
+        self._worker_restore_skybox.finished.connect(on_finished)
+        self._worker_restore_skybox.start()
+
     def restore_dark_textures(self):
-        try:
-            restore_dark_textures()
-            QMessageBox.information(self, "Restore Dark Textures", "Dark textures restored to default.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Restore Dark Textures", f"Failed to restore dark textures:\n{e}")
+        self.status_label.setText("Restoring default textures...")
+        self._worker_restore_dark = DownloadWorker(LightTextures)
+        def on_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to restore dark textures.")
+                QMessageBox.critical(self, "Restore Dark Textures", f"Failed to restore dark textures:\n{error}")
+                self._worker_restore_dark = None
+                return
+            try:
+                restore_dark_textures()
+                delete_all_downloads()
+                self.status_label.setText("Default textures restored! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Restore Dark Textures", "Dark textures restored to default.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to restore dark textures.")
+                QMessageBox.critical(self, "Restore Dark Textures", f"Failed to restore dark textures:\n{e}")
+            self._worker_restore_dark = None
+        self._worker_restore_dark.finished.connect(on_finished)
+        self._worker_restore_dark.start()
 
     def full_restore(self):
-        try:
-            full_restore()
-            QMessageBox.information(self, "Full Restore", "All textures restored to default.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Full Restore", f"Failed to restore textures:\n{e}")
+        self.status_label.setText("Restoring all textures...")
+        self._worker_full_restore = DownloadWorker(DefaultTextures)
+        def on_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to restore all textures.")
+                QMessageBox.critical(self, "Full Restore", f"Failed to restore textures:\n{error}")
+                self._worker_full_restore = None
+                return
+            try:
+                full_restore()
+                delete_all_downloads()
+                self.status_label.setText("All textures restored! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Full Restore", "All textures restored to default.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to restore all textures.")
+                QMessageBox.critical(self, "Full Restore", f"Failed to restore textures:\n{e}")
+            self._worker_full_restore = None
+        self._worker_full_restore.finished.connect(on_finished)
+        self._worker_full_restore.start()
 
     def kill_roblox(self):
         try:
@@ -863,14 +933,56 @@ class MainWindow(QWidget):
     def apply_skybox(self):
         selected = self.skybox_list.currentItem()
         if not selected:
+            self.status_label.setText("No skybox selected.")
             QMessageBox.warning(self, "Apply Skybox", "No skybox selected.")
             return
         skybox_name = selected.text()
+        self.status_label.setText("Downloading skybox patch...")
+
+        # Download and extract patch to the correct subfolder
+        self._worker_patch = DownloadWorker(SkyboxPatch, extract_subfolder="SkyboxPatch")
+        def on_patch_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to apply skybox patch.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox patch:\n{error}")
+                self._worker_patch = None
+                return
+            try:
+                install_assets()
+                delete_all_downloads()
+            except Exception as e:
+                self.status_label.setText("Failed to install skybox patch assets.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to install patch assets:\n{e}")
+                self._worker_patch = None
+                return
+            self.status_label.setText(f"Applying skybox '{skybox_name}'...")
+            try:
+                install_skybox(skybox_name)
+                self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to apply skybox.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
+            self._worker_patch = None
+
+        self._worker_patch.finished.connect(on_patch_finished)
+        self._worker_patch.start()
+
+    def apply_custom_skybox(self):
+        if not self.last_custom_sky_folder or not os.path.isdir(self.last_custom_sky_folder):
+            self.status_label.setText("No custom sky folder selected.")
+            QMessageBox.warning(self, "Apply Custom Skybox", "No custom sky folder selected.")
+            return
+        self.status_label.setText("Applying custom skybox...")
         try:
-            install_skybox(skybox_name)
-            QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
+            install_skybox(self.last_custom_sky_folder)
+            delete_all_downloads()
+            self.status_label.setText("Custom skybox applied! Restart Roblox to see the changes.")
+            QMessageBox.information(self, "Apply Custom Skybox", "Custom skybox applied successfully.\nRestart Roblox to see the changes.")
         except Exception as e:
-            QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
+            self.status_label.setText("Failed to apply custom skybox.")
+            QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to apply custom skybox:\n{e}")
+        self.update_skybox_preview(self.last_custom_sky_folder)
 
     def update_skybox_preview(self, skybox_name_or_path):
         import glob
@@ -990,6 +1102,17 @@ class MainWindow(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Settings", f"Error running script:\n{e}")
 
+    def get_and_extract_resource(self, url):
+        try:
+            zip_path = download_file(url, None)
+            if zip_path and zip_path.endswith(".zip"):
+                unzip_file(zip_path)
+                QMessageBox.information(self, "Resource", f"Downloaded and extracted:\n{zip_path}")
+            else:
+                QMessageBox.warning(self, "Resource", "Failed to download or not a zip file.")
+        except Exception as e:
+            QMessageBox.critical(self, "Resource", f"Error: {e}")
+
     def use_custom_sky_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Sky Folder", "")
         if folder:
@@ -998,19 +1121,6 @@ class MainWindow(QWidget):
             self.apply_custom_sky_btn.setEnabled(True)
         else:
             self.apply_custom_sky_btn.setEnabled(False)
-
-    def apply_custom_skybox(self):
-        if not self.last_custom_sky_folder or not os.path.isdir(self.last_custom_sky_folder):
-            QMessageBox.warning(self, "Apply Custom Skybox", "No custom sky folder selected.")
-            return
-        try:
-            install_skybox(self.last_custom_sky_folder)
-            QMessageBox.information(self, "Apply Custom Skybox", "Custom skybox applied successfully.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to apply custom skybox:\n{e}")
-
-        # --- Update the preview after applying ---
-        self.update_skybox_preview(self.last_custom_sky_folder)
 
     def toggle_dark_textures(self, state):
         if state == Qt.Checked or state == 2:
@@ -1029,6 +1139,30 @@ class MainWindow(QWidget):
                 self.dark_toggle.setChecked(True)
                 
                 
+class DownloadWorker(QThread):
+    finished = Signal(str, str)  # zip_path, error
+
+    def __init__(self, url, extract_subfolder=None):
+        super().__init__()
+        self.url = url
+        self.extract_subfolder = extract_subfolder
+
+    def run(self):
+        try:
+            zip_path = download_file(self.url, None)
+            if zip_path and zip_path.endswith(".zip"):
+                extract_to = None
+                if self.extract_subfolder:
+                    # Always extract to the correct subfolder
+                    local_app_data = os.getenv("LOCALAPPDATA")
+                    extract_to = os.path.join(local_app_data, "CustomBloxLauncher", "Downloads", self.extract_subfolder)
+                unzip_file(zip_path, extract_to)
+                self.finished.emit(zip_path, "")
+            else:
+                self.finished.emit("", "Failed to download or extract zip.")
+        except Exception as e:
+            self.finished.emit("", str(e))
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

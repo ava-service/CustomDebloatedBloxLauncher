@@ -15,10 +15,10 @@ def get_all_versions_paths():
 
 def install_dark_textures():
     print("[DEBUG] Installing dark textures...")
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    dark_textures = os.path.abspath(os.path.join(script_dir, '..', 'src', 'DarkTextures'))
+    localappdata = os.environ.get('LOCALAPPDATA')
+    dark_textures = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "DarkTextures")
     if not os.path.exists(dark_textures):
-        print("[ERROR] Dark textures folder not found!")
+        print("[ERROR] Dark textures folder not found in Downloads!")
         return
     found = False
     for versions_root in get_all_versions_paths():

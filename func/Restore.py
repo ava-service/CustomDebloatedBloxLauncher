@@ -13,11 +13,11 @@ def get_all_versions_paths():
     return [p for p in paths if os.path.exists(p)]
 
 def restore_skybox():
-    print("[DEBUG] Restoring default skybox from DefaultSky...")
-    # Use the correct absolute path to DefaultSky
-    stock_sky = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'DefaultSky'))
+    print("[DEBUG] Restoring default skybox from Downloads/DefaultSky...")
+    localappdata = os.environ.get('LOCALAPPDATA')
+    stock_sky = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "DefaultSky")
     if not os.path.exists(stock_sky):
-        print("[ERROR] DefaultSky folder not found!")
+        print("[ERROR] DefaultSky folder not found in Downloads!")
         return
     found = False
     for versions_root in get_all_versions_paths():
@@ -36,16 +36,16 @@ def restore_skybox():
                     print(f"[DEBUG] Copying {tex_file} to {sky_path}")
                     shutil.copy2(tex_file, sky_path)
     if found:
-        print("[DEBUG] Default skybox restored from DefaultSky.")
+        print("[DEBUG] Default skybox restored from Downloads/DefaultSky.")
     else:
         print("[ERROR] No Roblox/Bloxstrap/Fishstrap versions folder found!")
 
 def full_restore():
-    print("[DEBUG] Performing FULL RESTORE: Replacing all textures with DefaultTextures...")
-    # Use the correct absolute path to DefaultTextures
-    stock_textures = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'DefaultTextures'))
+    print("[DEBUG] Performing FULL RESTORE: Replacing all textures with Downloads/DefaultTextures...")
+    localappdata = os.environ.get('LOCALAPPDATA')
+    stock_textures = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "DefaultTextures")
     if not os.path.exists(stock_textures):
-        print("[ERROR] DefaultTextures folder not found!")
+        print("[ERROR] DefaultTextures folder not found in Downloads!")
         return
     replaced = 0
     for versions_root in get_all_versions_paths():
@@ -75,15 +75,16 @@ def full_restore():
                         print(f"[ERROR] Could not copy {s} to {d}: {e}")
                 replaced += 1
     if replaced:
-        print(f"[DEBUG] Replaced textures in {replaced} Roblox/Bloxstrap/Fishstrap version(s) with DefaultTextures.")
+        print(f"[DEBUG] Replaced textures in {replaced} Roblox/Bloxstrap/Fishstrap version(s) with Downloads/DefaultTextures.")
     else:
         print("[ERROR] No Roblox/Bloxstrap/Fishstrap versions folder found!")
-        
+
 def restore_dark_textures():
-    print("[DEBUG] Restoring default dark textures from LightTextures...")
-    stock_dark_textures = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'LightTextures'))
+    print("[DEBUG] Restoring default dark textures from Downloads/LightTextures...")
+    localappdata = os.environ.get('LOCALAPPDATA')
+    stock_dark_textures = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "LightTextures")
     if not os.path.exists(stock_dark_textures):
-        print("[ERROR] LightTextures folder not found!")
+        print("[ERROR] LightTextures folder not found in Downloads!")
         return
     found = False
     for versions_root in get_all_versions_paths():
@@ -118,6 +119,6 @@ def restore_dark_textures():
                     except Exception as e:
                         print(f"[ERROR] Could not copy {s} to {d}: {e}")
     if found:
-        print("[DEBUG] Default dark textures restored from LightTextures.")
+        print("[DEBUG] Default dark textures restored from Downloads/LightTextures.")
     else:
         print("[ERROR] No Roblox/Bloxstrap/Fishstrap versions folder found!")

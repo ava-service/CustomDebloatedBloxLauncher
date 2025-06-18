@@ -22,10 +22,10 @@ def get_all_versions_paths():
 
 def install_skybox(chosen_skybox):
     print(f"[DEBUG] Installing skybox: {chosen_skybox}")
-    install_assets()
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Use the correct path to your skybox assets
-    skybox_textures = os.path.abspath(os.path.join(script_dir, '..', 'src', 'skybox'))
+    localappdata = os.environ.get('LOCALAPPDATA')
+    # Use the correct path to your downloaded skybox assets
+    # skybox_textures = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "Skybox")
+    skybox_textures = os.path.join("src", "skybox")
     chosen_skybox_path = os.path.join(skybox_textures, chosen_skybox)
     for versions_root in get_all_versions_paths():
         for version in glob.glob(os.path.join(versions_root, '*')):
@@ -44,9 +44,8 @@ def install_skybox(chosen_skybox):
 def install_assets():
     print("[DEBUG] Installing assets...")
     localappdata = os.environ.get('LOCALAPPDATA')
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Use the correct path to your assets folder inside SkyboxPatch
-    assets = os.path.abspath(os.path.join(script_dir, '..', 'src', 'SkyboxPatch'))
+    # Use the correct path to your downloaded SkyboxPatch assets
+    assets = os.path.join(localappdata, "CustomBloxLauncher", "Downloads", "SkyboxPatch")
     rbx_storage = os.path.join(localappdata, 'Roblox', 'rbx-storage')
 
     asset_files = [
