@@ -25,6 +25,12 @@ It allows you to easily patch, restore, and personalize Roblox with custom skybo
 - **Automatic Dependency Handling:**  
   The included `Install-and-Run.bat` script will install Python 3.12 (if needed), set up dependencies, and launch the app—even if your folder has spaces.
 
+
+|   |  |
+| ------------- | ------------- |
+| ![alt](Preview1.png)  | ![alt](Preview3.png)  |
+| ![alt](Preview2.png)  | ![alt](Preview4.png)  |
+
 ---
 
 ## Installation & Usage
