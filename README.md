@@ -3,7 +3,7 @@
 **Custom Debloated Blox Launcher (CDBL)** is a Windows utility for customizing and managing your Roblox installation.  
 It allows you to easily patch, restore, and personalize Roblox with custom skyboxes, dark textures, and more—all with a user-friendly interface.
 
-[Install](https://github.com/eman225511/CustomDebloatedBloxLauncher?tab=readme-ov-file#installation--usage)
+[Install Guid](https://github.com/eman225511/CustomDebloatedBloxLauncher?tab=readme-ov-file#installation--usage)
 ---
 
 ## Features
