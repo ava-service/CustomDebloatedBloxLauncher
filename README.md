@@ -118,6 +118,7 @@ CDBL/
 
 ## Credits
 
+- Mega thanks to [fleasion/Fleasion](https://github.com/fleasion/Fleasion) for the method 
 - [eman225511/CustomDebloatedBloxLauncher](https://github.com/eman225511/CustomDebloatedBloxLauncher)  
 - [KickfnGIT/DebloatedBloxLauncher](https://github.com/KickfnGIT/DebloatedBloxLauncher) for this [code](https://github.com/eman225511/CustomDebloatedBloxLauncher/blob/main/func/ChangeSettings.ps1)
 - Huge thanks to @kaizenken on discord for the skyboxes
