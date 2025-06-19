@@ -66,12 +66,27 @@ CDBL/
 ├─ Install-and-Run.bat    # One-click installer and launcher
 ├─ requirements.txt       # Python dependencies
 ├─ src/
+│   ├─ DarkTextures/      # Dark textures directory
+│   ├─ DarkTextures.zip   # Dark textures ZIP archive
+│   ├─ DefaultSky/        # Default skybox directory
+│   ├─ DefaultSky.zip     # Default skybox ZIP archive
+│   ├─ DefaultTextures/   # Default textures directory
+│   ├─ DefaultTextures.zip# Default textures ZIP archive
+│   ├─ LightTextures/     # Light textures directory
+│   ├─ LightTextures.zip  # Light textures ZIP archive
+│   ├─ SkyboxPNGs/        # Skybox PNG images
+│   ├─ SkyboxPatch/       # Skybox patch directory
+│   ├─ SkyboxPatch.zip    # Skybox patch ZIP archive
+│   ├─ SkyboxZIPs/        # Skybox ZIPs storage
 │   └─ skybox/            # (Legacy) Local skybox storage (now uses %LOCALAPPDATA%)
 ├─ func/
 │   ├─ APIFunc.py         # Download, unzip, and utility functions
 │   ├─ ApplySkybox.py     # Skybox patching logic
 │   ├─ ApplyDark.py       # Dark texture patching logic
-│   └─ Restore.py         # Restore functions
+│   ├─ ChangeSettings.ps1 # PowerShell settings script
+│   ├─ GlobalBasicSettings_13.xml # Settings XML
+│   ├─ Restore.py         # Restore functions
+│   └─ __pycache__/       # Python bytecode cache
 └─ README.md
 ```
 
