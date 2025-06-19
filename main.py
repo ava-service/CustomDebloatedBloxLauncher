@@ -21,7 +21,7 @@ import webbrowser
 
 # Version information
 # Update this for each release
-APP_VERSION = "update"  # Update this for each release
+APP_VERSION = "V1-1"  # Update this for each release
 
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
@@ -30,13 +30,15 @@ DefaultTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw
 DefaultSky = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultSky.zip"
 SkyboxPatch = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPatch.zip"
 
+OgOof = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/og-oof.ogg"
+DefaultOOF = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DefaultOOF.ogg"
+
 # SkyBox data and download URLs
 SkyName = ""
 SkyboxZIPs = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxZIPs/{SkyName}.zip"
 SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPNGs/SkyboxPNGs.zip"
 SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
 
-GITHUB_VERSION_URL = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/latest-version.txt"
 GITHUB_RELEASES_API = "https://api.github.com/repos/eman225511/CustomDebloatedBloxLauncher/releases/latest"
 
 def check_for_update():
@@ -148,6 +150,24 @@ class AnimatedToggle(QCheckBox):
 
     offset = Property(int, get_offset, set_offset)
 
+class SoundDownloadWorker(QThread):
+    finished = Signal(str, str)  # sound_path, error
+
+    def __init__(self, url, save_path):
+        super().__init__()
+        self.url = url
+        self.save_path = save_path
+
+    def run(self):
+        try:
+            resp = requests.get(self.url)
+            resp.raise_for_status()
+            with open(self.save_path, "wb") as f:
+                f.write(resp.content)
+            self.finished.emit(self.save_path, "")
+        except Exception as e:
+            self.finished.emit("", str(e))
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -180,6 +200,7 @@ class MainWindow(QWidget):
         self.ensure_previews_zip()
         print("[DEBUG] Previews zip ensured and extracted.")
         self.load_config()
+        self.last_custom_sky_folder = None
 
         # --- Main rounded background frame ---
         main_bg = QFrame(self)
@@ -259,7 +280,7 @@ class MainWindow(QWidget):
         title.setStyleSheet("color: white;")
         top_bar.addWidget(title)
         top_bar.addStretch()
-        version = QLabel("Version 1")
+        version = QLabel("Version 1.1")
         version.setFont(QFont("Segoe UI", 9))
         version.setStyleSheet("color: #aaa; margin-right: 12px; border: 1px solid #222; border-radius: 12px; padding: 2px 12px;")
         top_bar.addWidget(version)
@@ -312,6 +333,7 @@ class MainWindow(QWidget):
         tab_bar.addTab("Skyboxes")
         tab_bar.addTab("Textures")
         tab_bar.addTab("Settings")
+        tab_bar.addTab("Customization")
         tab_bar.setStyleSheet("""
             QTabBar {
                 background: transparent;
@@ -878,13 +900,64 @@ class MainWindow(QWidget):
         settings_layout.addStretch()
         self.stacked.addWidget(settings_page)
 
+        # --- Customization Tab ---
+        customization_page = QWidget()
+        customization_layout = QVBoxLayout(customization_page)
+        customization_layout.setAlignment(Qt.AlignTop)
+        customization_label = QLabel("Customization")
+        customization_label.setFont(QFont("Segoe UI", 13, QFont.Bold))
+        customization_label.setStyleSheet("color: #fff; margin-bottom: 8px;")
+        customization_layout.addWidget(customization_label)
+
+        oof_btn_row = QHBoxLayout()
+        oof_btn_row.setAlignment(Qt.AlignLeft)
+        apply_oof_btn = QPushButton("Apply OG OOF")
+        apply_oof_btn.setFixedHeight(36)
+        apply_oof_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #22303a;
+                color: #8edcff;
+                border-radius: 10px;
+                padding: 6px 18px;
+                font: bold 10pt "Segoe UI";
+            }
+            QPushButton:hover {
+                background-color: #2c425a;
+                color: #fff;
+            }
+        """)
+        apply_oof_btn.clicked.connect(self.apply_og_oof)
+
+        restore_oof_btn = QPushButton("Restore Default OOF")
+        restore_oof_btn.setFixedHeight(36)
+        restore_oof_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #223a2d;
+                color: #8effc6;
+                border-radius: 10px;
+                padding: 6px 18px;
+                font: bold 10pt "Segoe UI";
+            }
+            QPushButton:hover {
+                background-color: #2c5a42;
+                color: #fff;
+            }
+        """)
+        restore_oof_btn.clicked.connect(self.restore_og_oof)
+
+        oof_btn_row.addWidget(apply_oof_btn)
+        oof_btn_row.addWidget(restore_oof_btn)
+        customization_layout.addLayout(oof_btn_row)
+        customization_layout.addStretch()
+        self.stacked.addWidget(customization_page)
+
         outer_layout.addWidget(self.stacked)
 
         # Connect tab changes to stacked widget
         tab_bar.currentChanged.connect(self.stacked.setCurrentIndex)
 
         # Set initial preview if any skybox is selected
-        if self.skybox_list.count() > 0:
+        if hasattr(self, "skybox_list") and self.skybox_list.count() > 0:
             self.skybox_list.setCurrentRow(0)
             self.update_skybox_preview(self.skybox_list.currentItem().text())
 
@@ -1219,6 +1292,110 @@ class MainWindow(QWidget):
                 QMessageBox.critical(self, "Restore Dark Textures", f"Failed to restore textures:\n{e}")
                 self.dark_toggle.setChecked(True)
                 
+    def apply_og_oof(self):
+        print("[DEBUG] Starting apply_og_oof")
+        self.status_label.setText("Downloading OG OOF sound...")
+        local_app_data = os.getenv("LOCALAPPDATA")
+        sounds_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Sounds")
+        os.makedirs(sounds_dir, exist_ok=True)
+        og_oof_path = os.path.join(sounds_dir, "og-oof.ogg")
+        print(f"[DEBUG] OG OOF path: {og_oof_path}")
+
+        def after_download(sound_path, error):
+            print(f"[DEBUG] after_download called for apply_og_oof, error: {error}")
+            if error:
+                self.status_label.setText("Failed to download OG OOF sound.")
+                print(f"[ERROR] Failed to download OG OOF sound: {error}")
+                QMessageBox.critical(self, "OG OOF", f"Failed to download OG OOF sound:\n{error}")
+                self._worker_oof = None
+                return
+                
+            replaced = False
+            for versions_root in get_all_versions_paths():
+                print(f"[DEBUG] Checking versions_root: {versions_root}")
+                for version in os.listdir(versions_root):
+                    sounds_path = os.path.join(versions_root, version, "content", "sounds")
+                    ouch_path = os.path.join(sounds_path, "ouch.ogg")
+                    print(f"[DEBUG] Attempting to replace: {ouch_path}")
+                    if os.path.exists(sounds_path):
+                        try:
+                            shutil.copy2(sound_path, ouch_path)
+                            replaced = True
+                            print(f"[DEBUG] Replaced {ouch_path}")
+                        except Exception as e:
+                            print(f"[WARN] Could not replace {ouch_path}: {e}")
+                            
+            # This block needs to be inside after_download, with proper indentation
+            if replaced:
+                self.status_label.setText("OG OOF sound applied!")
+                print("[DEBUG] OG OOF sound applied!")
+                QMessageBox.information(self, "OG OOF", "OG OOF sound applied!\nRestart Roblox to hear the change.")
+            else:
+                self.status_label.setText("Could not find any Roblox sounds folders.")
+                print("[WARN] Could not find any Roblox sounds folders.")
+                QMessageBox.warning(self, "OG OOF", "Could not find any Roblox sounds folders.")
+            
+            # Set worker to None at the end
+            self._worker_oof = None
+
+        # Start the worker only once
+        print("[DEBUG] Launching SoundDownloadWorker for OG OOF")
+        self._worker_oof = SoundDownloadWorker(OgOof, og_oof_path)
+        self._worker_oof.finished.connect(after_download)
+        self._worker_oof.start()
+
+    def restore_og_oof(self):
+        print("[DEBUG] Starting restore_og_oof")
+        self.status_label.setText("Downloading default OOF sound...")
+        local_app_data = os.getenv("LOCALAPPDATA")
+        sounds_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Sounds")
+        os.makedirs(sounds_dir, exist_ok=True)
+        default_oof_path = os.path.join(sounds_dir, "DefaultOOF.ogg")
+        print(f"[DEBUG] Default OOF path: {default_oof_path}")
+
+        def after_download(sound_path, error):
+            print(f"[DEBUG] after_download called for restore_og_oof, error: {error}")
+            if error:
+                self.status_label.setText("Failed to download default OOF sound.")
+                print(f"[ERROR] Failed to download default OOF sound: {error}")
+                QMessageBox.critical(self, "Restore OOF", f"Failed to download default OOF sound:\n{error}")
+                self._worker_restore_oof = None
+                return
+            
+            replaced = False
+            for versions_root in get_all_versions_paths():
+                print(f"[DEBUG] Checking versions_root: {versions_root}")
+                for version in os.listdir(versions_root):
+                    sounds_path = os.path.join(versions_root, version, "content", "sounds")
+                    ouch_path = os.path.join(sounds_path, "ouch.ogg")
+                    print(f"[DEBUG] Attempting to replace: {ouch_path}")
+                    if os.path.exists(sounds_path):
+                        try:
+                            shutil.copy2(sound_path, ouch_path)
+                            replaced = True
+                            print(f"[DEBUG] Replaced {ouch_path}")
+                        except Exception as e:
+                            print(f"[WARN] Could not replace {ouch_path}: {e}")
+            
+            # This block is now correctly indented inside after_download
+            if replaced:
+                self.status_label.setText("Default OOF sound restored!")
+                print("[DEBUG] Default OOF sound restored!")
+                QMessageBox.information(self, "Restore OOF", "Default OOF sound restored!\nRestart Roblox to hear the change.")
+            else:
+                self.status_label.setText("Could not find any Roblox sounds folders.")
+                print("[WARN] Could not find any Roblox sounds folders.")
+                QMessageBox.warning(self, "Restore OOF", "Could not find any Roblox sounds folders.")
+            
+            # This is also correctly indented
+            self._worker_restore_oof = None
+
+        # This block starts the worker and is correctly indented within the main method
+        print("[DEBUG] Launching SoundDownloadWorker for Default OOF")
+        self._worker_restore_oof = SoundDownloadWorker(DefaultOOF, default_oof_path)
+        self._worker_restore_oof.finished.connect(after_download)
+        self._worker_restore_oof.start()
+                
                 
 class DownloadWorker(QThread):
     finished = Signal(str, str)  # zip_path, error
@@ -1242,7 +1419,7 @@ class DownloadWorker(QThread):
                 if extract_to:
                     for root, dirs, files in os.walk(extract_to):
                         if root == extract_to:
-                            continue  # skip the root itself
+                            continue
                         for f in files:
                             src = os.path.join(root, f)
                             dst = os.path.join(extract_to, f)
@@ -1266,3 +1443,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
