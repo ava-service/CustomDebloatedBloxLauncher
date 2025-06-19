@@ -35,7 +35,7 @@ SkyboxZIPs = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/ref
 SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPNGs/SkyboxPNGs.zip"
 SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
 
-GITHUB_VERSION_URL = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/main/latest-version.txt"
+GITHUB_VERSION_URL = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/latest-version.txt"
 
 def check_for_update():
     try:
