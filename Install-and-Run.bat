@@ -59,6 +59,6 @@ if exist "%SCRIPTPATH%%REQUIREMENTS%" (
 )
 
 :: === RUN SCRIPT IN NEW CONSOLE WINDOW AS ADMIN ===
-set "PYTHON_CMD=""%PYTHON_EXE%"" ""%SCRIPTPATH%%SCRIPT%"""
+set "PYTHON_CMD=%PYTHON_EXE% \"%SCRIPTPATH%%SCRIPT%\""
 echo Running as administrator: %PYTHON_CMD%
-powershell -NoProfile -Command "Start-Process cmd -ArgumentList '/k %PYTHON_CMD% & echo. & pause' -Verb RunAs"
+powershell -NoProfile -Command "Start-Process cmd -ArgumentList '/k \"%PYTHON_CMD%\" & echo. & pause' -Verb RunAs"

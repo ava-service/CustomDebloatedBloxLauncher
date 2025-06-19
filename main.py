@@ -18,6 +18,10 @@ import tempfile
 import shutil
 import requests
 
+# Version information
+# Update this for each release
+APP_VERSION = "1.0.0"  # Update this for each release
+
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
 LightTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/LightTextures.zip"
@@ -30,6 +34,23 @@ SkyName = ""
 SkyboxZIPs = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxZIPs/{SkyName}.zip"
 SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPNGs/SkyboxPNGs.zip"
 SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
+
+GITHUB_VERSION_URL = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/main/latest-version.txt"
+
+def check_for_update():
+    try:
+        resp = requests.get(GITHUB_VERSION_URL, timeout=5)
+        resp.raise_for_status()
+        latest = resp.text.strip()
+        if latest != APP_VERSION:
+            QMessageBox.information(
+                None,
+                "Update Available",
+                f"A new version ({latest}) is available!\n"
+                "Please download the latest version from GitHub."
+            )
+    except Exception as e:
+        print(f"[WARN] Could not check for updates: {e}")
 
 print("[DEBUG] Starting CDBL...")
 print("[DEBUG] Downloading required files...")
@@ -125,6 +146,10 @@ class AnimatedToggle(QCheckBox):
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+        print("[DEBUG] Initializing MainWindow...")
+        print("[DEBUG] Checking for updates...")
+        check_for_update()
+        print("[DEBUG] Setting up UI...")
         self.setWindowTitle("CDBL")
         self.setMinimumSize(720, 520)
         self.setWindowFlag(Qt.FramelessWindowHint)
@@ -146,7 +171,9 @@ class MainWindow(QWidget):
         self.skybox_preview_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Previews")
         os.makedirs(self.skybox_preview_dir, exist_ok=True)
         self.available_skyboxes = self.fetch_skybox_list()
+        print("[DEBUG] Downloading skybox previews...")
         self.ensure_previews_zip()
+        print("[DEBUG] Previews zip ensured and extracted.")
         self.load_config()
 
         # --- Main rounded background frame ---
@@ -1227,6 +1254,7 @@ class DownloadWorker(QThread):
                 self.finished.emit("", "Failed to download or extract zip.")
         except Exception as e:
             self.finished.emit("", str(e))
+        
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
