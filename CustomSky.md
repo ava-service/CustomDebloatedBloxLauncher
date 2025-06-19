@@ -42,18 +42,6 @@ You can use a panorama-to-skybox converter (like [this one](https://matheowis.gi
 **You can just change the .png
 To .tex**
 
-If you’re replacing files in Roblox’s install folder (e.g. sky512_up.tex), you need .tex format.
-
-Since Roblox uses a custom .tex format, there’s no official converter, but if you’ve already:
-   - Downloaded working .tex files
-   - Or have a tool that reads/writes .tex
-
-Then just replace each .tex file’s contents using your PNGs.
-
-If you don’t have a converter, try using:
-   - A modded tool like Texture Tool, Noesis, or a game-specific converter (won’t work 100% unless it targets Roblox-style .tex)
-   - Or inject your textures at runtime via shaders, scripts, or asset spoofing
-
 ⸻
 
 🔁 Step 4: Replace Roblox Files
