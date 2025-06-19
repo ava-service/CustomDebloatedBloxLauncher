@@ -36,7 +36,7 @@ It allows you to easily patch, restore, and personalize Roblox with custom skybo
 
 ## Installation & Usage
 
-1. **Go to [Here](https://github.com/eman225511/CustomDebloatedBloxLauncher/releases/tag/src) and downlaod `CDBL.zip`**
+1. **Go to [Here](https://github.com/eman225511/CustomDebloatedBloxLauncher/releases/tag/update) and downlaod `CDBL.zip`**
 
 2. **Run the Launcher Script**
 
