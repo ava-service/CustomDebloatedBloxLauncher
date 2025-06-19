@@ -986,23 +986,24 @@ class MainWindow(QWidget):
             return
         skybox_name = selected.text()
         zip_url = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxZIPs/{skybox_name}.zip"
-        local_zip = os.path.join(tempfile.gettempdir(), f"{skybox_name}.zip")
         local_app_data = os.getenv("LOCALAPPDATA")
         extract_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Skyboxes", skybox_name)
         os.makedirs(extract_dir, exist_ok=True)
-        # Download ZIP if not already extracted
-        if not os.listdir(extract_dir):
+
+        # Use DownloadWorker for non-blocking download/extract
+        self.status_label.setText(f"Downloading skybox '{skybox_name}'...")
+        self._worker_skybox = DownloadWorker(zip_url)
+        def on_finished(zip_path, error):
+            if error:
+                self.status_label.setText("Failed to download/extract skybox.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox:\n{error}")
+                self._worker_skybox = None
+                return
             try:
-                self.status_label.setText(f"Downloading skybox '{skybox_name}'...")
-                QApplication.processEvents()
-                resp = requests.get(zip_url)
-                resp.raise_for_status()
-                with open(local_zip, "wb") as f:
-                    f.write(resp.content)
                 self.status_label.setText(f"Extracting skybox '{skybox_name}'...")
                 QApplication.processEvents()
-                unzip_file(local_zip, extract_dir)
-                # --- Flatten any nested folders ---
+                unzip_file(zip_path, extract_dir)
+                # Flatten any nested folders
                 for root, dirs, files in os.walk(extract_dir):
                     if root == extract_dir:
                         continue
@@ -1011,25 +1012,21 @@ class MainWindow(QWidget):
                         dst = os.path.join(extract_dir, f)
                         if not os.path.exists(dst):
                             shutil.move(src, dst)
-                # Remove empty subfolders
                 for d in dirs:
                     dir_path = os.path.join(root, d)
                     if os.path.isdir(dir_path) and not os.listdir(dir_path):
                         os.rmdir(dir_path)
+                self.status_label.setText(f"Applying skybox '{skybox_name}'...")
+                QApplication.processEvents()
+                install_skybox(extract_dir)
+                self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
             except Exception as e:
-                self.status_label.setText("Failed to download/extract skybox.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox:\n{e}")
-                return
-        # Now apply as before
-        try:
-            self.status_label.setText(f"Applying skybox '{skybox_name}'...")
-            QApplication.processEvents()
-            install_skybox(extract_dir)
-            self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
-            QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            self.status_label.setText("Failed to apply skybox.")
-            QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
+                self.status_label.setText("Failed to apply skybox.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
+            self._worker_skybox = None
+        self._worker_skybox.finished.connect(on_finished)
+        self._worker_skybox.start()
 
     def apply_custom_skybox(self):
         if not self.last_custom_sky_folder or not os.path.isdir(self.last_custom_sky_folder):
