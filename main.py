@@ -20,7 +20,7 @@ import requests
 
 # Version information
 # Update this for each release
-APP_VERSION = "1.0.0"  # Update this for each release
+APP_VERSION = "update"  # Update this for each release
 
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
@@ -36,18 +36,20 @@ SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/r
 SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
 
 GITHUB_VERSION_URL = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/latest-version.txt"
+GITHUB_RELEASES_API = "https://api.github.com/repos/eman225511/CustomDebloatedBloxLauncher/releases/latest"
 
 def check_for_update():
     try:
-        resp = requests.get(GITHUB_VERSION_URL, timeout=5)
+        resp = requests.get(GITHUB_RELEASES_API, timeout=5)
         resp.raise_for_status()
-        latest = resp.text.strip()
-        if latest != APP_VERSION:
+        data = resp.json()
+        latest = data.get("tag_name", "").lstrip("v")  # Remove 'v' if present
+        if latest and latest != APP_VERSION:
             QMessageBox.information(
                 None,
                 "Update Available",
                 f"A new version ({latest}) is available!\n"
-                "Please download the latest version from GitHub."
+                "Please download the latest version from GitHub Releases."
             )
     except Exception as e:
         print(f"[WARN] Could not check for updates: {e}")
