@@ -17,6 +17,7 @@ import urllib.request
 import tempfile
 import shutil
 import requests
+import webbrowser
 
 # Version information
 # Update this for each release
@@ -44,13 +45,15 @@ def check_for_update():
         resp.raise_for_status()
         data = resp.json()
         latest = data.get("tag_name", "").lstrip("v")  # Remove 'v' if present
+        html_url = data.get("html_url", "https://github.com/eman225511/CustomDebloatedBloxLauncher/releases/latest")
         if latest and latest != APP_VERSION:
             QMessageBox.information(
                 None,
                 "Update Available",
                 f"A new version ({latest}) is available!\n"
-                "Please download the latest version from GitHub Releases."
+                "The latest release page will now open in your browser."
             )
+            webbrowser.open(html_url)
     except Exception as e:
         print(f"[WARN] Could not check for updates: {e}")
 
