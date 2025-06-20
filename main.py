@@ -1123,6 +1123,7 @@ class MainWindow(QWidget):
                         os.rmdir(dir_path)
                 self.status_label.setText(f"Applying skybox '{skybox_name}'...")
                 QApplication.processEvents()
+                install_assets()
                 install_skybox(extract_dir)
                 self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
                 QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
@@ -1140,6 +1141,7 @@ class MainWindow(QWidget):
             return
         self.status_label.setText("Applying custom skybox...")
         try:
+            install_assets()
             install_skybox(self.last_custom_sky_folder)
             delete_all_downloads()
             self.status_label.setText("Custom skybox applied! Restart Roblox to see the changes.")
