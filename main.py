@@ -1095,61 +1095,94 @@ class MainWindow(QWidget):
         extract_dir = os.path.join(local_app_data, "CustomBloxLauncher", "Skyboxes", skybox_name)
         os.makedirs(extract_dir, exist_ok=True)
 
-        # Use DownloadWorker for non-blocking download/extract
-        self.status_label.setText(f"Downloading skybox '{skybox_name}'...")
-        self._worker_skybox = DownloadWorker(zip_url)
-        def on_finished(zip_path, error):
+        # Step 1: Download the patch first.
+        self.status_label.setText("Downloading patch for skybox...")
+        self._worker_patch = DownloadWorker(SkyboxPatch, extract_subfolder="SkyboxPatch")
+
+        def on_patch_finished(patch_zip_path, error):
+            self._worker_patch = None  # Clear patch worker
             if error:
-                self.status_label.setText("Failed to download/extract skybox.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to download/extract skybox:\n{error}")
-                self._worker_skybox = None
+                self.status_label.setText("Failed to download patch.")
+                QMessageBox.critical(self, "Apply Skybox", f"Failed to download patch:\n{error}")
                 return
-            try:
-                self.status_label.setText(f"Extracting skybox '{skybox_name}'...")
-                QApplication.processEvents()
-                unzip_file(zip_path, extract_dir)
-                # Flatten any nested folders
-                for root, dirs, files in os.walk(extract_dir):
-                    if root == extract_dir:
-                        continue
-                    for f in files:
-                        src = os.path.join(root, f)
-                        dst = os.path.join(extract_dir, f)
-                        if not os.path.exists(dst):
-                            shutil.move(src, dst)
-                for d in dirs:
-                    dir_path = os.path.join(root, d)
-                    if os.path.isdir(dir_path) and not os.listdir(dir_path):
-                        os.rmdir(dir_path)
-                self.status_label.setText(f"Applying skybox '{skybox_name}'...")
-                QApplication.processEvents()
-                install_assets()
-                install_skybox(extract_dir)
-                self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
-                QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
-            except Exception as e:
-                self.status_label.setText("Failed to apply skybox.")
-                QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
-            self._worker_skybox = None
-        self._worker_skybox.finished.connect(on_finished)
-        self._worker_skybox.start()
+
+            # Step 2: Patch is ready, now download the actual skybox.
+            self.status_label.setText(f"Downloading skybox '{skybox_name}'...")
+            self._worker_skybox = DownloadWorker(zip_url)
+
+            def on_skybox_finished(skybox_zip_path, skybox_error):
+                self._worker_skybox = None  # Clear skybox worker
+                if skybox_error:
+                    self.status_label.setText("Failed to download skybox.")
+                    QMessageBox.critical(self, "Apply Skybox", f"Failed to download skybox:\n{skybox_error}")
+                    return
+                try:
+                    # Step 3: Unzip, flatten, and install everything.
+                    self.status_label.setText(f"Extracting skybox '{skybox_name}'...")
+                    QApplication.processEvents()
+                    unzip_file(skybox_zip_path, extract_dir)
+                    # Flatten any nested folders
+                    for root, dirs, files in os.walk(extract_dir):
+                        if root == extract_dir:
+                            continue
+                        for f in files:
+                            src = os.path.join(root, f)
+                            dst = os.path.join(extract_dir, f)
+                            if not os.path.exists(dst):
+                                shutil.move(src, dst)
+                    for d in dirs:
+                        dir_path = os.path.join(root, d)
+                        if os.path.isdir(dir_path) and not os.listdir(dir_path):
+                            os.rmdir(dir_path)
+
+                    self.status_label.setText(f"Applying skybox '{skybox_name}'...")
+                    QApplication.processEvents()
+                    install_assets()  # This will now find the patched assets
+                    install_skybox(extract_dir)
+                    self.status_label.setText(f"Skybox '{skybox_name}' installed! Restart Roblox to see the changes.")
+                    QMessageBox.information(self, "Apply Skybox", f"Skybox '{skybox_name}' installed successfully.\nRestart Roblox to see the changes.")
+                except Exception as e:
+                    self.status_label.setText("Failed to apply skybox.")
+                    QMessageBox.critical(self, "Apply Skybox", f"Failed to install skybox:\n{e}")
+
+            self._worker_skybox.finished.connect(on_skybox_finished)
+            self._worker_skybox.start()
+
+        self._worker_patch.finished.connect(on_patch_finished)
+        self._worker_patch.start()
 
     def apply_custom_skybox(self):
         if not self.last_custom_sky_folder or not os.path.isdir(self.last_custom_sky_folder):
             self.status_label.setText("No custom sky folder selected.")
             QMessageBox.warning(self, "Apply Custom Skybox", "No custom sky folder selected.")
             return
-        self.status_label.setText("Applying custom skybox...")
-        try:
-            install_assets()
-            install_skybox(self.last_custom_sky_folder)
-            delete_all_downloads()
-            self.status_label.setText("Custom skybox applied! Restart Roblox to see the changes.")
-            QMessageBox.information(self, "Apply Custom Skybox", "Custom skybox applied successfully.\nRestart Roblox to see the changes.")
-        except Exception as e:
-            self.status_label.setText("Failed to apply custom skybox.")
-            QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to apply custom skybox:\n{e}")
-        self.update_skybox_preview(self.last_custom_sky_folder)
+
+        # Download the patch first to ensure assets are available
+        self.status_label.setText("Downloading patch for skybox...")
+        self._worker_patch = DownloadWorker(SkyboxPatch, extract_subfolder="SkyboxPatch")
+
+        def on_patch_finished(zip_path, error):
+            self._worker_patch = None
+            if error:
+                self.status_label.setText("Failed to download patch.")
+                QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to download patch:\n{error}")
+                return
+
+            # Patch is ready, now apply the custom skybox
+            self.status_label.setText("Applying custom skybox...")
+            try:
+                install_assets()
+                install_skybox(self.last_custom_sky_folder)
+                delete_all_downloads()
+                self.status_label.setText("Custom skybox applied! Restart Roblox to see the changes.")
+                QMessageBox.information(self, "Apply Custom Skybox", "Custom skybox applied successfully.\nRestart Roblox to see the changes.")
+            except Exception as e:
+                self.status_label.setText("Failed to apply custom skybox.")
+                QMessageBox.critical(self, "Apply Custom Skybox", f"Failed to apply custom skybox:\n{e}")
+            self.update_skybox_preview(self.last_custom_sky_folder)
+
+        self._worker_patch.finished.connect(on_patch_finished)
+        self._worker_patch.start()
 
     def update_skybox_preview(self, skybox_name):
         preview_path = os.path.join(self.skybox_preview_dir, f"{skybox_name}.png")
