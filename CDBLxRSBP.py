@@ -30,7 +30,7 @@ from io import BytesIO
 
 # Version information
 # Update this for each release
-APP_VERSION = "V1-2 x 8.9.25 Bday beta"  # Update this for each release
+APP_VERSION = "V1-2 x RSBP 8.10.25-B Beta"  # Update this for each release
 
 # URLs for downloading resources
 DarkTextures = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/DarkTextures.zip"
@@ -48,7 +48,7 @@ SkyboxZIPs = f"https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/ref
 SkyboxPNGsZIP = "https://github.com/eman225511/CustomDebloatedBloxLauncher/raw/refs/heads/main/src/SkyboxPNGs/SkyboxPNGs.zip"
 SkysList = "https://raw.githubusercontent.com/eman225511/CustomDebloatedBloxLauncher/refs/heads/main/src/SkyboxZIPs/sky-list.txt"
 
-GITHUB_RELEASES_API = "https://api.github.com/repos/eman225511/CustomDebloatedBloxLauncher/releases/latest"
+GITHUB_RELEASES_API = "https://api.github.com/repos/ava-service/CustomDebloatedBloxLauncher/releases/latest"
 
 def check_for_update():
     try:
@@ -56,7 +56,7 @@ def check_for_update():
         resp.raise_for_status()
         data = resp.json()
         latest = data.get("tag_name", "").lstrip("v")
-        html_url = data.get("html_url", "https://github.com/eman225511/CustomDebloatedBloxLauncher/releases/latest")
+        html_url = data.get("html_url", "https://github.com/ava-service/CustomDebloatedBloxLauncher/releases/latest")
         if latest and latest != APP_VERSION:
             QMessageBox.information(
                 None,
@@ -68,7 +68,7 @@ def check_for_update():
     except Exception as e:
         print(f"[WARN] Could not check for updates: {e}")
 
-print("[DEBUG] Starting CDBL...")
+print("[DEBUG] Starting CDBL x RSBP...")
 print("[DEBUG] Downloading required files...")
 
 if getattr(sys, 'frozen', False):
@@ -472,7 +472,16 @@ class SkyboxGenerator(QtWidgets.QWidget):
         self.radio_six.setChecked(True)
         self.mode_group.addButton(self.radio_six)
         self.mode_group.addButton(self.radio_stretch)
-        panel_layout.addWidget(self.radio_six)
+        
+        self.btn_generate = QtWidgets.QPushButton("Generate Skybox")
+        self.btn_generate.clicked.connect(self.generateSkybox)
+        
+        # Create a horizontal layout for the radio button and generate button
+        radio_six_layout = QtWidgets.QHBoxLayout()
+        radio_six_layout.addWidget(self.radio_six)
+        radio_six_layout.addWidget(self.btn_generate)
+        radio_six_layout.addStretch()
+        panel_layout.addLayout(radio_six_layout)
         
         stretch_image_layout = QtWidgets.QHBoxLayout()
         stretch_image_layout.addWidget(self.radio_stretch)
@@ -556,12 +565,6 @@ class SkyboxGenerator(QtWidgets.QWidget):
         self.btn_bulk_import.clicked.connect(self.bulkImportImages)
         panel_layout.addWidget(self.btn_bulk_import)
 
-        panel_layout.addSpacing(10)
-
-        self.btn_generate = QtWidgets.QPushButton("Generate Skybox")
-        self.btn_generate.clicked.connect(self.generateSkybox)
-        panel_layout.addWidget(self.btn_generate)
-
         panel_layout.addStretch()
 
         main_layout.addWidget(panel)
@@ -586,6 +589,8 @@ class SkyboxGenerator(QtWidgets.QWidget):
         self.btn_browse_stretch.setEnabled(not six_mode)
         self.stretch_rotate_btn.setEnabled(not six_mode)
         self.stretch_flip_btn.setEnabled(not six_mode)
+
+        self.btn_generate.setEnabled(six_mode)
 
         self.preview.textures.clear()
         self.preview.use_spherical_uv = not six_mode
@@ -868,7 +873,7 @@ class MainWindow(QWidget):
         title.setStyleSheet("color: white;")
         top_bar.addWidget(title)
         top_bar.addStretch()
-        version = QLabel("Version 1.2")
+        version = QLabel("Version " + APP_VERSION)
         version.setFont(QFont("Segoe UI", 9))
         version.setStyleSheet("color: #aaa; margin-right: 12px; border: 1px solid #222; border-radius: 12px; padding: 2px 12px;")
         top_bar.addWidget(version)
