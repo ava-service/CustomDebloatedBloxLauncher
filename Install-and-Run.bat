@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: === CONFIGURATION ===
-set "SCRIPT=main.py"
+set "SCRIPT=CDBLxRSBP.py"
 set "REQUIREMENTS=requirements.txt"
 set "PYTHON_INSTALLER=python-3.12.1-amd64.exe"
 set "PYTHON_URL=https://www.python.org/ftp/python/3.12.1/%PYTHON_INSTALLER%"
